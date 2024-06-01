@@ -1,9 +1,9 @@
 import random
-
+from torch import Tensor, argmax, cat, rand, rand_like
+from neural_network import NeuralNetwork
 class Player:
-  def __init__(self, risk_tolerance=0.5, strategy=None):
-      self.__risk_tolerance = risk_tolerance
-      self.__strategy = strategy or self.default_strategy()
+  def __init__(self, strategy=None):
+      self.strategy = strategy
       self.__fitness = 0
   
   def get_name(self):
@@ -21,48 +21,33 @@ class Player:
   def get_risk_tolerance(self) -> float:
     return self.__risk_tolerance
     
-  def default_strategy(self):
-    strategy = {}
-    risk_tolerance = self.get_risk_tolerance()
+  def decide(self, input_data: Tensor) -> int:
+    output = self.strategy(input_data)
+
+    return argmax(output).item()
     
-    for player_total in range(4, 13):
-      for dealer_card in range(2, 12):
-        for usable_ace in range(0, 2):
-          if player_total >= 17:
-            strategy[(player_total, dealer_card, usable_ace)] = 1 # Hit
-          elif player_total <= 11:
-            strategy[(player_total, dealer_card, usable_ace)] = 0 # Stick
-          else:
-            # Adjust strategy for intermediate state according to risk tolerance value.
-            if random.random() <= risk_tolerance:
-               strategy[(player_total, dealer_card, usable_ace)] = 0 # Stick
-            else:
-              strategy[(player_total, dealer_card, usable_ace)] = 1 # Hit
-    
-    return strategy
-  
-  def decide(self, player_total: int, dealer_card: int, usable_ace: int) -> int:
-    key = (player_total, dealer_card, usable_ace)
-    strategy = self.get_strategy()
-    
-    return strategy.get(key, 0) # If combination is not present in strategy - default to Stick.
-  
   def mutate(self, mutation_rate = 0.5):
-    strategy = self.get_strategy()
-    for key in strategy:
-      if random.random() < mutation_rate and random.random() < self.get_risk_tolerance():
-        strategy[key] = 1 - strategy[key]
+    for param in self.strategy.parameters():
+      if rand(1).item() < mutation_rate:
+        param.data += rand_like(param.data) * 0.1
         
   def crossover(self, other: 'Player') -> 'Player':
-    strategy = self.get_strategy()
-    other_strategy = other.get_strategy()
-    risk_tolerance = self.get_risk_tolerance()
-    child_strategy = {}
-    for key in strategy:
-      # More aggresive crossover
-      if random.random() < risk_tolerance:
-        child_strategy[key] = random.choice([strategy[key], other_strategy[key], 0])
-      else:
-        child_strategy[key] = random.choice([strategy[key], other_strategy[key]])
-        
-    return Player(risk_tolerance, child_strategy)
+    child1 = Player(NeuralNetwork())
+    child2 = Player(NeuralNetwork())
+    
+    crossover_point_fc1 = random.randint(2, 14)
+    child1.strategy.fc1.bias.data = cat((self.strategy.fc1.weight.data[:crossover_point_fc1], other.strategy.fc1.weight.data[crossover_point_fc1:]), dim=0)
+    child2.strategy.fc1.bias.data = cat((self.strategy.fc1.weight.data[:crossover_point_fc1], other.strategy.fc1.weight.data[crossover_point_fc1:]), dim=0)
+    
+    child1.strategy.fc1.bias.data = cat((self.strategy.fc1.bias.data[:crossover_point_fc1], other.strategy.fc1.bias.data[crossover_point_fc1:]), dim=0)
+    child1.strategy.fc1.bias.data = cat((self.strategy.fc1.bias.data[:crossover_point_fc1], other.strategy.fc1.bias.data[crossover_point_fc1:]), dim=0)
+    
+    crossover_point_fc2 = random.randint(1, 3)
+    
+    child1.strategy.fc2.bias.data = cat((self.strategy.fc2.weight.data[:crossover_point_fc2], other.strategy.fc2.weight.data[crossover_point_fc2:]), dim=0)
+    child2.strategy.fc2.bias.data = cat((self.strategy.fc2.weight.data[:crossover_point_fc2], other.strategy.fc2.weight.data[crossover_point_fc2:]), dim=0)
+    
+    child1.strategy.fc2.bias.data = cat((self.strategy.fc2.bias.data[:crossover_point_fc2], other.strategy.fc2.bias.data[crossover_point_fc2:]), dim=0)
+    child1.strategy.fc2.bias.data = cat((self.strategy.fc2.bias.data[:crossover_point_fc2], other.strategy.fc2.bias.data[crossover_point_fc2:]), dim=0)
+    
+    return child1, child2

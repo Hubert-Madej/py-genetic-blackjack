@@ -1,15 +1,32 @@
 import random
+import gymnasium as gym
 from player import Player
 from typing import List
+import torch
+from neural_network import NeuralNetwork
+
+env = gym.make("Blackjack-v1")
 
 def generate_population(size: int) -> List[Player]:
   population = []
   for _ in range(size):
-    risk_tolerance = round(random.uniform(0, 1), 2)
-    population.append(Player(risk_tolerance=risk_tolerance))
-  
+    strategy = NeuralNetwork()
+    population.append(Player(strategy))
+
   return population
 
+def compute_fitness(player: Player, num_of_games: int):
+  score = 0
+  for _ in range(num_of_games):
+    observation, _ = env.reset()
+    termindated, truncated = False, False
+    while not (termindated and truncated):
+      input_data = torch.tensor(observation).unsqueeze(0)
+      action = player.decide(input_data)
+      observation, reward, termindated, truncated, _ = env.step(action)
+      score += reward
+    return score / reward
+      
 def select_n_top_players(population: List[Player], n:int):
   sorted_population = sorted(population, key=lambda p: p.get_fitness(), reverse=True)
   
@@ -18,20 +35,9 @@ def select_n_top_players(population: List[Player], n:int):
 def crossover(player1: Player, player2: Player) -> Player:
   return player1.crossover(player2)
 
-def apply_mutation(population: List[Player], mutation_rate: float):
-  for player in population:
-    player.mutate(mutation_rate)
+def mutate(player: Player, mutation_rate: float):
+  return player.mutate(mutation_rate)
+    
     
 def evolve_population(population: List[Player], top_n: int, mutation_rate: float):
-  top_players = select_n_top_players(population, top_n)
-  
-  new_population = []
-  while len(new_population) < len(population):
-    parent1 = random.choice(top_players)
-    parent2 = random.choice(top_players)
-    
-    new_population.append(crossover(player1=parent1, player2=parent2))
-  
-  apply_mutation(population, mutation_rate)
-  
-  return new_population
+  pass
