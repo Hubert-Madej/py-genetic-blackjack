@@ -42,13 +42,12 @@ class Player:
 
         for param1, param2, param_self, param_other in zip(child1.strategy.parameters(), child2.strategy.parameters(),
                                                            self.strategy.parameters(), other.strategy.parameters()):
-            # Flatten parameters to 1D for easy crossover
+
             param1_data = param_self.data.view(-1)
             param2_data = param_other.data.view(-1)
 
             crossover_point = random.randint(0, param1_data.size(0))
 
-            # Perform crossover
             param1.data = cat((param1_data[:crossover_point], param2_data[crossover_point:]), 0).view(
                 param_self.data.shape)
             param2.data = cat((param2_data[:crossover_point], param1_data[crossover_point:]), 0).view(

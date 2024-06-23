@@ -4,7 +4,6 @@ from player import Player
 from typing import List
 import torch
 from neural_network import NeuralNetwork
-
 env = gym.make("Blackjack-v1")
 
 
@@ -29,6 +28,8 @@ def compute_fitness(player: Player, num_of_games: int):
             observation, reward, terminated, truncated, _ = env.step(action)
             if reward == 1:
                 score += reward
+            elif reward == 0 and terminated:
+                score += 1
     return score / num_of_games
 
 

@@ -2,12 +2,14 @@ import random
 import statistics
 import genetic_blackjack as gb
 import pandas as pd
+import json
+import torch
 
-GENERATIONS = 50
-POPULATION_SIZE = 300
-PLAYER_ROUNDS = 100
+GENERATIONS = 300
+POPULATION_SIZE = 100
+PLAYER_ROUNDS = 50
 TOP_N_TO_KEEP = 3
-MUTATION_RATE = 0.3
+MUTATION_RATE = 0.1
 
 def main():
     population = gb.generate_population(POPULATION_SIZE)
@@ -45,10 +47,17 @@ def main():
 
         population[0] = best_individual
 
+        if generation + 1 == GENERATIONS:
+            torch.save(best_individual.strategy.state_dict(), "best_individual")
+
 
 # Save mean fitness values to Excel file
     df = pd.DataFrame({'Generation': list(range(1, GENERATIONS + 1)), 'Mean Fitness': mean_fitness_values})
     df.to_excel('mean_fitness_values.xlsx', index=False)
+    model_state = best_individual.strategy.state_dict()
+    model_state_json = {key: value.tolist() for key, value in model_state.items()}
+    with open("best_individual.json", 'w') as json_file:
+        json.dump(model_state_json, json_file, indent=4)
 
 if __name__ == '__main__':
     main()
